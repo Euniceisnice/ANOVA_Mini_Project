@@ -1,0 +1,210 @@
+---
+title: "Statistical inference with the GSS data"
+output:
+  html_document:
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+  pdf_document: default
+---
+Author: Wu Xiaozhuan [euniceng07@outlook.com]
+  
+## Introduction
+
+In this study, I apply the skills learnt in the course of Inferential Statistics by Duke University.
+The work is based on the General Social Survey dataset, from which the necessary variables will be taken.
+I would like to perform statistical inference tests to answer the following research question:
+
+What is the relationship between education and confidence in different institutions such as banks and financial institutions, majored companies, organized religions and press and what is the relationship between these four organizations?
+
+The first step of the project is to upload, describe and clean the data. Then, for the research question posted above, I present the inferences drawn from statistical tests to answer the question.
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+library(gridExtra)
+```
+
+### Load data
+
+Make sure your data and R Markdown files are in the same directory. When loaded
+your data file will be called `gss`. Delete this note when before you submit 
+your work. 
+
+```{r load-data}
+load("gss.Rdata")
+```
+
+
+* * *
+
+## Part 1: Data
+
+The General Social Survey has been conducted annually 1972-2012. Each survey from 1972 to 2004 was an independently drawn sample of English-speaking persons 18 years of age or over, living in non-institutional arrangements within the United States. Starting in 2006 Spanish-speakers were added to the target population. For this project, I work with the Coursera extract of the raw survey dataset. 
+
+As the survey is conducted by random sampling on the territory of the USA, the results, which will be obtained in this project, can be generalized to the US population. However, we could not come up with any conclusion about causation in this study as the statistical tests performed cannot provide causality relationships between the variables of interest.
+
+
+* * *
+
+## Part 2: Research question
+
+In my research, I would like to see what are the relations between the education and the confidence in banks & financial institutions/majored companies/organised religions/press and what is relationship between all four organizations. 
+
+People's confidence in the significant social stake holders are essential for people's faith to the society. The relationship between education and various institutions will show if the society has any problems. Research of this question could be helpful for public policy making. The study of this question should be considered on governmental level as it affects the whole society and can tell a lot about the problems.
+* * *
+
+## Part 3: Exploratory data analysis
+
+### Step 1: Filter and choose the necessary data 
+
+The dataframe for this research has been extracted from GSS. The dataset contains the following columns: highest year of school completed, confidence in banks and financial institutions, confidence in major companies, confidence in organised religion, confidence in press into it. The missing values should be removed from the dataset.
+
+```{r echo=TRUE}
+myData <- data.frame(educ = as.numeric(as.character(gss$educ)), confinan = gss$confinan, conbus = gss$conbus, conclerg = gss$conclerg, conpress = gss$conpress)
+myData <- na.omit(myData)
+head(myData, 20)
+```
+
+Among the 57061 observations in the raw data, the new dataset contains 32755 effective observations for the study.
+
+### Step 2: Selection of the observations
+
+From all the observations I would like to study the group of people that at least finished primary school since the popularity of education is nearly 100% in 2002 in the USA. Thus, I took the response of "0-4 year of education" in the raw data as ineffective data. Besides, people with at least primary school education could better represent Americans in this study. So, all the participants with the claimed below 5-year education were excluded from the dataframe.
+
+```{r echo=TRUE}
+myData <- myData[which(myData$educ > 4, ), ]
+head(myData,20)
+```
+
+After the implementation of limitation, there were 32,381 observations left. 
+
+Next step is to visualize the data for the better understanding.
+
+
+### Step 3: Data Visualization
+
+First, the tables for each of the relation pair were built (education and confidence in banks & financial, education in confidence in majored companies, education and organised religions, education and press) and all of them were visualised with a mosaic plot,a box plot and a stacked bar chart. 
+
+```{r include=FALSE}
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  require(grid)
+
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+
+  numPlots = length(plots)
+
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                    ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+
+ if (numPlots==1) {
+    print(plots[[1]])
+
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
+```
+
+
+```{r echo=TRUE}
+
+obser <- function (con,til) {
+  table(myData$educ,con)
+  plot(table(myData$educ,con))
+
+  box <- ggplot(myData, aes(x=con, y=myData$educ)) + geom_boxplot() + ggtitle("Boxplot - ", til) 
+  bar <- ggplot(myData, aes(x=myData$educ)) + geom_bar(aes(fill=con), position = "fill") + ggtitle("Barchart - ", til) 
+  grid.arrange(box, bar, ncol=2, widths=c(1,1.5))
+}
+
+obser(con = myData$confinan, til = "Education (Year) and Confidence in \n Banks and Financial Institutions")
+obser(con = myData$conbus, til = "Education (Year) and Confidence in \n Majored Companies")
+obser(con = myData$conclerg, til = "Education (Year) and Confidence in \n Organised Religions")
+obser(con = myData$conpress, til = "Education (Year) and Confidence in \n Press")
+
+```
+
+
+Observations:
+
+1. Respondents with longer education years tend to have lower level of confidence in organised religions. We can see a decreasing trend of the percentage of "A great deal" as the education years increase. Since we cannot see a clear trend of increasing in "hardly any", we can assume that the extent of confidence shrinks, but still exist to some extent among the respondents. 
+
+2. Respondents with longer education years tend to have higher level of confidence in majored companies. We can see an decreasing trend of the percentage of "hardly any" as the education years increase. While the portion of "only some" remains more or less the same among people with different education years. 
+
+3. Respondents with 15 or 16 years of education appear a slightly unusual trend among all education groups. 
+
+* * *
+## Part 4: Inference
+
+**Question 1: Is there relations between the education and the confidence in banks & financial institutions/majored companies/organised religions/press?**
+
+State hypothesis
+
+Null Hypothesis: Education year and the confidence in banks & financial institutions/majored companies/organised religions/press are independent. 
+
+Alternative Hypothesis: Education year and the confidence in banks & financial institutions/majored companies/organised religions/press are dependent. 
+
+We can compare the means of education year among three groups of replies. Significance level is 5%. 
+
+```{r}
+summary(aov(myData$educ ~ myData$confinan))
+summary(aov(myData$educ ~ myData$conbus))
+summary(aov(myData$educ ~ myData$conclerg))
+summary(aov(myData$educ ~ myData$conpress))
+```
+And all probability values are < 2e-16 so we reject the null hypothesis. We can say that education years and the confidence in banks & financial institutions/majored companies/organised religions/press are dependent, at a 95% confidence level. 
+
+**Question 2: Is people's confidence in banks & financial institutions/majored companies/organised religions/press are independent are associated?**
+
+State hypothesis 
+
+Null Hypothesis: People's confidence in four organizations mentioned above are independent.
+
+Alternative Hypothesis: People's confidence in at least two out of four organizations mentioned above are dependent. 
+
+We can apply Chi-square. Significance level is 5%.
+
+
+```{r}
+organisations <- cbind(summary(myData$confinan), summary(myData$conbus), summary(myData$conclerg),summary(myData$conpress))
+colnames(organisations) <- c("Banks & Financial Institutions", "Majored Companies", "Organised Religions", "Press")
+organisations
+chisq.test(organisations)
+
+```
+Since P < 2.2e-16, we reject the null hypothesis. We can say that people's confidence in at least two out of four organizations mentioned above are dependent, at a 95% confidence level. 
+
